@@ -1,0 +1,87 @@
+C51 COMPILER V9.54   ALG                                                                   09/16/2020 22:51:31 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE ALG
+OBJECT MODULE PLACED IN alg.obj
+COMPILER INVOKED BY: D:\keil\C51\BIN\C51.EXE c\alg.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\alg.lst) 
+                    -OBJECT(alg.obj)
+
+line level    source
+
+   1          #include "H/alg.h"
+   2          #include "math.h"
+   3          
+   4          float A;
+   5          float B;//B=0
+   6          float Q;
+   7          float H;
+   8          float R;
+   9          float x_last;//上次最优值
+  10          float p_mid;
+  11          float p_last;//上次最优协方差
+  12          float kg;
+  13          float x_mid;//当前预测值
+  14          float x_now;//当前最优值
+  15          float z_measure;//当前测量值
+  16          
+  17          
+  18          /*一阶互补滤波*/
+  19          static float filter_last = 0;
+  20          float First_Order_Filter(float x)
+  21          {
+  22   1              static float    a = 0.78;
+  23   1              if (filter_last == 0)
+  24   1                      filter_last = x;
+  25   1              filter_last = (1-a)*filter_last + a * x;
+  26   1              return filter_last;
+  27   1      }
+  28          
+  29          
+  30          void Alg_Start(float x)
+  31          {
+  32   1              static unsigned char alg_start = 0;
+  33   1              if (alg_start == 0)
+  34   1              {
+  35   2                      A = 1;
+  36   2                      B = 0;
+  37   2                      Q = 0.5;
+  38   2                      H = 1;
+  39   2                      R = 0.25;
+  40   2                      
+  41   2                      x_last = x;
+  42   2                      p_last = 0.5;
+  43   2                      alg_start = 1;
+  44   2                      
+  45   2                      filter_last = x;
+  46   2              }
+  47   1      }
+  48          
+  49          float Alg_Process(float x)
+  50          {
+  51   1              x = First_Order_Filter(x);
+  52   1              
+  53   1              x_mid = A*x_last /*+ B *Uk*/ + Q;//B=0
+  54   1              p_mid = p_last+Q;/*A*p_last*A' + Q:A*A'=1*/
+C51 COMPILER V9.54   ALG                                                                   09/16/2020 22:51:31 PAGE 2   
+
+  55   1              kg = p_mid/(p_mid +R);
+  56   1              z_measure = x;
+  57   1              x_now = x_mid + kg * (z_measure - H * x_mid);
+  58   1              p_last = (1-kg)*p_mid;
+  59   1              x_last = x_now;
+  60   1              return x_now;
+  61   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    661    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     57      12
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

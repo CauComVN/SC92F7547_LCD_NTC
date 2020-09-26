@@ -1,0 +1,11 @@
+"STARTUP.obj",
+"main.obj",
+"IO_Init.obj",
+"key.obj",
+"Signal.obj",
+"NTC.obj",
+"LCD.obj",
+"alg.obj" 
+TO "FullResources" 
+RAMSIZE(256) 
+CODE( 0x100 )

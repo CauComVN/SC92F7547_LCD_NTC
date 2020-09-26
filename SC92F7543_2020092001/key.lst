@@ -1,0 +1,179 @@
+C51 COMPILER V9.54   KEY                                                                   09/20/2020 17:02:52 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE KEY
+OBJECT MODULE PLACED IN key.obj
+COMPILER INVOKED BY: D:\keil\C51\BIN\C51.EXE c\key.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\key.lst) 
+                    -OBJECT(key.obj)
+
+line level    source
+
+   1          #include "H/Function_Init.H"
+   2          #include "H/UserHeader.h"
+   3          #include "H/Key.h"
+   4          
+   5          
+   6          unsigned short usKeyPin = 0;
+   7          unsigned short usKeyDebounce = 0;
+   8          unsigned char  ucKeyFlag = 0;
+   9          unsigned char  ucComKeyCnt = 0;
+  10          unsigned char ucKeyCurrent;
+  11          
+  12          void KeyInit(void)
+  13          {
+  14   1              //P05,P06,P07
+  15   1              P0CON &= 0x1F;
+  16   1              P0PH |= 0xE0;
+  17   1      }
+  18          
+  19          unsigned char xGetKeyPin(void)
+  20          {
+  21   1              unsigned char keypresscnt = 0;
+  22   1              ucKeyCurrent = 0;
+  23   1              if (P07 == 0)
+  24   1              {
+  25   2                      ucKeyCurrent |= 1<<2;
+  26   2                      keypresscnt++;
+  27   2              }
+  28   1              else if (P06 == 0)
+  29   1              {
+  30   2                      ucKeyCurrent |= 1<<1;
+  31   2                      keypresscnt++;
+  32   2              }
+  33   1              else if (P05 == 0)
+  34   1              {
+  35   2                      ucKeyCurrent |= 1<<0;
+  36   2                      keypresscnt++;
+  37   2              }
+  38   1              
+  39   1              return keypresscnt;
+  40   1      }
+  41          
+  42          //unsigned char xGetKeyFlag(void)
+  43          //{
+  44          //      return ucKeyFlag;
+  45          //}
+  46          
+  47          //unsigned char xGetCurrentKey(void)
+  48          //{
+  49          //      return ucKeyCurrent;
+  50          //}
+  51          
+  52          unsigned short KeyScanProcess(void)
+  53          {
+  54   1              unsigned short ret = 0;
+C51 COMPILER V9.54   KEY                                                                   09/20/2020 17:02:52 PAGE 2   
+
+  55   1              unsigned char keypresscnt;
+  56   1              P0VO = 0x1C;
+  57   1              _nop_();
+  58   1              _nop_();
+  59   1              _nop_();
+  60   1              _nop_();
+  61   1              _nop_();
+  62   1              KeyInit();
+  63   1              _nop_();
+  64   1              _nop_();
+  65   1              _nop_();
+  66   1              _nop_();
+  67   1              _nop_();
+  68   1              
+  69   1              ret = 0;
+  70   1              keypresscnt = xGetKeyPin();
+  71   1              if (ucKeyCurrent)//key press
+  72   1              {
+  73   2                      usKeyDebounce++;
+  74   2                      if ((keypresscnt == 1)&& (ucKeyFlag != 0x80))
+  75   2                      {
+  76   3                              if (usKeyPin == ucKeyCurrent)
+  77   3                              {
+  78   4                                      if (usKeyDebounce >= KEY_LONGDEBOUNCE)
+  79   4                                      {
+  80   5                                              usKeyDebounce = KEY_LONGDEBOUNCE;
+  81   5                                              ucKeyFlag = 0x40;
+  82   5                                      }
+  83   4                              }
+  84   3                              else
+  85   3                              {
+  86   4                                      
+  87   4                                      if (ucKeyFlag == 0x80)
+  88   4                                      {
+  89   5                                              ret = usKeyPin + 0x8000;
+  90   5                                      }
+  91   4                                      else if (usKeyDebounce >= KEY_LONGDEBOUNCE)
+  92   4                                      {
+  93   5                                              ret = usKeyPin + 0x4000;
+  94   5                                      }
+  95   4                                      else
+  96   4                                      {
+  97   5                                              ret = usKeyPin;
+  98   5                                      }
+  99   4                                      usKeyDebounce = 0;
+ 100   4                                      ucKeyFlag = 0;
+ 101   4                                      usKeyPin = 0;
+ 102   4                                      ucComKeyCnt = 0;
+ 103   4                                      usKeyPin = ucKeyCurrent;
+ 104   4                                      usKeyDebounce = 0;
+ 105   4                              }
+ 106   3                      }
+ 107   2                      else // comb
+ 108   2                      {
+ 109   3                              if (usKeyPin == ucKeyCurrent)
+ 110   3                              {
+ 111   4                                      if (usKeyDebounce >= KEY_COMBDEBOUNCE)
+ 112   4                                      {
+ 113   5                                              usKeyDebounce = KEY_COMBDEBOUNCE;
+ 114   5                                              ucKeyFlag = 0x80;
+ 115   5                                      }
+ 116   4                              }
+C51 COMPILER V9.54   KEY                                                                   09/20/2020 17:02:52 PAGE 3   
+
+ 117   3                              else
+ 118   3                              {
+ 119   4                                      if (ucComKeyCnt < keypresscnt)
+ 120   4                                      {
+ 121   5                                              ucComKeyCnt = keypresscnt;
+ 122   5                                              usKeyPin = ucKeyCurrent;
+ 123   5                                              usKeyDebounce = 0;
+ 124   5                                      }
+ 125   4                              }
+ 126   3                      }
+ 127   2              }
+ 128   1              else
+ 129   1              {
+ 130   2                      if (ucKeyFlag == 0x80)
+ 131   2                      {
+ 132   3                              ret = usKeyPin + 0x8000;
+ 133   3                      }
+ 134   2                      else if (usKeyDebounce >= KEY_LONGDEBOUNCE)
+ 135   2                      {
+ 136   3                              ret = usKeyPin + 0x4000;
+ 137   3                      }
+ 138   2                      else
+ 139   2                      {
+ 140   3                              ret = usKeyPin;
+ 141   3                      }
+ 142   2                      usKeyDebounce = 0;
+ 143   2                      ucKeyFlag = 0;
+ 144   2                      usKeyPin = 0;
+ 145   2                      ucComKeyCnt = 0;
+ 146   2              }
+ 147   1              P0VO = 0xFC;
+ 148   1              return ret;
+ 149   1      }
+ 150          
+ 151          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    387    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      7    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

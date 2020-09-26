@@ -1,0 +1,373 @@
+C51 COMPILER V9.54   MAIN                                                                  09/20/2020 17:09:44 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN main.obj
+COMPILER INVOKED BY: D:\keil\C51\BIN\C51.EXE c\main.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\main.lst
+                    -) OBJECT(main.obj)
+
+line level    source
+
+   1          #include "H/Function_Init.H"
+   2          #include "H/UserHeader.h"
+   3          #include "H/Key.h"
+   4          #include "H/Signal.h"
+   5          #include "H/LCD.h"
+   6          #include "H/NTC.h"
+   7          
+   8          MODETYPE eModeType;
+   9          HOLDTYPE eHoldType;
+  10          TEMPERATURE eTempType;
+  11          BATLEVEL eBatLevel;
+  12          
+  13          unsigned short BatAdcBuf[BAT_ADC_BUF];
+  14          
+  15          unsigned short usNtcTime;
+  16          unsigned short usBatTime;
+  17          unsigned short usSignalTime;
+  18          unsigned short usNtcDisTime;
+  19          /************************Power Off Region Start***************************/
+  20          #if 1
+  21          #if ENABLE_SOFT_POWER
+  22          void PowerOn(void)
+  23          {
+  24   1              //P1.3 输出
+  25   1              P1CON |= 0x08;
+  26   1              P13 = 1;
+  27   1      }
+  28          void PowerOff(void)
+  29          {
+  30   1              //P1.3 输出
+  31   1              P1CON |= 0x08;
+  32   1              P13 = 0;
+  33   1      }
+  34          #endif
+  35          #endif
+  36          /************************Power Off Region End***************************/
+  37          
+  38          /************************Power Off Region Start***************************/
+  39          #if 1
+  40          #if ENABLE_SOFT_BACKLIGHT
+  41          void BackLightOn(void)
+  42          {
+  43   1              //P1.1 输出H
+  44   1              P1CON |= 0x02;
+  45   1              P11 = 1;
+  46   1      }
+  47          void BackLightOff(void)
+  48          {
+  49   1              //P1.3 输出L
+  50   1              P1CON |= 0x02;
+  51   1              P11 = 0;
+  52   1      }
+  53          #endif
+  54          #endif
+C51 COMPILER V9.54   MAIN                                                                  09/20/2020 17:09:44 PAGE 2   
+
+  55          /************************Power Off Region End***************************/
+  56          
+  57          /************************Timer 1ms Region Start***************************/
+  58          unsigned char isTimer0_1ms = 0;
+  59          #if 1
+  60          void Timer0_Init(void)
+  61          { 
+  62   1              TMCON = 0X01;    //------111 ;Timer0、Tiemr1和Tiemr2选择时钟Fsys
+  63   1              
+  64   1              //T0设置
+  65   1              TMOD |= 0x01;                 //0000 0001;Timer0设置工作方式1
+  66   1              TL0 = (65536 - TIMER_TICK_1MS)%256;    //溢出时间：时钟为Fsys，则16000*（1/Fsys）=1ms;
+  67   1              TH0 = (65536 - TIMER_TICK_1MS)/256;
+  68   1              TR0 = 0;
+  69   1              ET0 = 1;//定时器0允许
+  70   1              TR0 = 1;//打开定时器0
+  71   1      }
+  72          
+  73          void timer0() interrupt 1
+  74          {
+  75   1          TL0 = (65536 - TIMER_TICK_1MS)%256;
+  76   1              TH0 = (65536 - TIMER_TICK_1MS)/256;
+  77   1              isTimer0_1ms = 1;
+  78   1              
+  79   1              usBatTime++;
+  80   1              usSignalTime++;
+  81   1              usNtcTime++;
+  82   1              usNtcDisTime++;
+  83   1      }
+  84          #endif
+  85          /************************Timer 1ms Region End***************************/
+  86          /************************BAT Region End***************************/
+  87          #if 1
+  88          unsigned char AdcFlag = 0;
+  89          void ADC_Interrupt(void) interrupt 6
+  90          {
+  91   1              ADCCON &= ~(0X20);  //清中断标志位
+  92   1              AdcFlag = 1;
+  93   1      }
+  94          
+  95          unsigned short xGetAdc(unsigned char Channel)
+  96          {
+  97   1              unsigned short ADCValue;
+  98   1              ADCCON = 0X80|Channel;          //开启ADC，ADC采样频率为2M ,选择Channel位ADC采样口
+  99   1              if(Channel<8)
+ 100   1              {
+ 101   2                      ADCCFG0 = 1<<Channel;   //设置Channel作为采样口
+ 102   2              }
+ 103   1              else
+ 104   1              {
+ 105   2                      ADCCFG1 = 1<<(Channel-8);   //设置Channel作为采样口
+ 106   2              }
+ 107   1              IE |= 0X40;        //开启ADC中断
+ 108   1              ADCCFG2 = 0x04 | 0x02;//adc 时钟=Fhrc/12,tick = 36+14 = 50,16000000/12/50 = 
+ 109   1              ADCCON |= 0X40;   //开始ADC转换
+ 110   1              while(!AdcFlag);                                 //等待 ADC转换完成;
+ 111   1              AdcFlag = 0;
+ 112   1              ADCValue = (ADCVH<<4)+(ADCVL>>4);
+ 113   1              return ADCValue;
+ 114   1      }
+ 115          
+ 116          unsigned char BatAdcCnt;
+C51 COMPILER V9.54   MAIN                                                                  09/20/2020 17:09:44 PAGE 3   
+
+ 117          void BatProcess(void)
+ 118          {
+ 119   1              static unsigned char isInitAdc = 0;
+ 120   1              unsigned short ADCValue;
+ 121   1              unsigned char i,j;
+ 122   1              BATLEVEL level;
+ 123   1              if (isInitAdc == 0)
+ 124   1              {
+ 125   2                      for(BatAdcCnt = 0;BatAdcCnt < BAT_ADC_BUF;BatAdcCnt++)
+ 126   2                              BatAdcBuf[BatAdcCnt] = xGetAdc(14);
+ 127   2                      isInitAdc = 1;
+ 128   2              }
+ 129   1              if (BatAdcCnt == BAT_ADC_BUF)
+ 130   1              {
+ 131   2                      BatAdcCnt = 0;
+ 132   2                      for (j = 0; j < BAT_ADC_BUF; j++)
+ 133   2                      {
+ 134   3                              for (i = 0; i < BAT_ADC_BUF - 1 - j; i++)
+ 135   3                              {
+ 136   4                                      if (BatAdcBuf[i] < BatAdcBuf[i + 1])
+ 137   4                                      {
+ 138   5                                              ADCValue = BatAdcBuf[i]; 
+ 139   5                                              BatAdcBuf[i] = BatAdcBuf[i + 1]; 
+ 140   5                                              BatAdcBuf[i + 1] = ADCValue;
+ 141   5                                      }
+ 142   4                              }
+ 143   3                      }
+ 144   2                      ADCValue = 0;
+ 145   2                      for (i = 2; i < 6; i++)
+ 146   2                      {
+ 147   3                              ADCValue+=BatAdcBuf[i]>>2;
+ 148   3                      }
+ 149   2                      if (ADCValue > BAT_LEVEL2_VALUE)
+ 150   2                      {
+ 151   3                              level = eBAT2;
+ 152   3                      }
+ 153   2                      else if (ADCValue > BAT_LEVEL1_VALUE)
+ 154   2                      {
+ 155   3                              level = eBAT1;
+ 156   3                      }
+ 157   2                      else
+ 158   2                      {
+ 159   3                              level = eBAT0;
+ 160   3                      }
+ 161   2                      if (eBatLevel != level)
+ 162   2                      {
+ 163   3                              eBatLevel = level;
+ 164   3                              LCD_Bat((unsigned char)eBatLevel);
+ 165   3                      }
+ 166   2              }
+ 167   1              else
+ 168   1              {
+ 169   2                      BatAdcBuf[BatAdcCnt] = xGetAdc(14);
+ 170   2              }
+ 171   1      }
+ 172          #endif
+ 173          /************************BAT Region End***************************/
+ 174          /************************Signal Region End***************************/
+ 175          #if 1
+ 176          void SignalProcess(void)
+ 177          {
+ 178   1              unsigned short ADCValue;
+C51 COMPILER V9.54   MAIN                                                                  09/20/2020 17:09:44 PAGE 4   
+
+ 179   1              if (eHoldType == eHOLD_ENABLE)
+ 180   1                      return;
+ 181   1              ADCValue = xGetAdc(15);
+ 182   1              LCD_Signal(Measure_Process(eModeType,ADCValue));
+ 183   1      }
+ 184          #endif
+ 185          /************************Signal Region End***************************/
+ 186          /************************NTC Region End***************************/
+ 187          #if 1
+ 188          void NtcProcess(void)
+ 189          {
+ 190   1              unsigned short ADCValue;
+ 191   1              short ntc;
+ 192   1              ADCValue = xGetAdc(13);
+ 193   1              
+ 194   1              ntc = xGetTempCbyNtc(ADCValue);
+ 195   1              if (usNtcDisTime >= NTC_DISPLAY_TIME)
+ 196   1              {
+ 197   2                      usNtcDisTime -= NTC_DISPLAY_TIME;
+ 198   2                      if(eTempType == eTEMP_F)
+ 199   2                      {
+ 200   3                              ntc=(ntc+320)*9/5;
+ 201   3                      }
+ 202   2                      LCD_NTC(ntc);
+ 203   2              }
+ 204   1      }
+ 205          #endif
+ 206          /************************NTC Region End***************************/
+ 207          
+ 208          
+ 209          
+ 210          void main(void)
+ 211          {
+ 212   1              unsigned short Key;
+ 213   1              IO_Init();
+ 214   1              WDTCON |= 0x10;             //清看门狗
+ 215   1              OPERCON = 0X01;       //CHKSUM运算
+ 216   1              _nop_();
+ 217   1              LCD_Init();
+ 218   1      //      LED_Init();
+ 219   1              
+ 220   1              #if ENABLE_SOFT_POWER
+ 221   1              PowerOn();
+ 222   1              #endif
+ 223   1              #if ENABLE_SOFT_BACKLIGHT
+ 224   1              BackLightOn();
+ 225   1              #endif
+ 226   1              //1ms Timer
+ 227   1              Timer0_Init();
+ 228   1              KeyInit();
+ 229   1              
+ 230   1              EA = 1;
+ 231   1              
+ 232   1              eModeType = eMODEA;
+ 233   1              eHoldType = eHOLD_DISABLE;
+ 234   1              eTempType = eTEMP_C;
+ 235   1              LCD_Temperature(eTempType);
+ 236   1                      
+ 237   1              LCD_Temperature(eTempType);
+ 238   1              LCD_Mode(eModeType);
+ 239   1              
+ 240   1              Lcd_Hold(eHoldType);
+C51 COMPILER V9.54   MAIN                                                                  09/20/2020 17:09:44 PAGE 5   
+
+ 241   1              BatProcess();
+ 242   1              while(1)
+ 243   1              {
+ 244   2                      if (isTimer0_1ms)
+ 245   2                      {
+ 246   3                              isTimer0_1ms = 0;
+ 247   3                              //Key Scan
+ 248   3                              Key = KeyScanProcess();
+ 249   3                              if (Key == 0x01)//P05,HOLD
+ 250   3                              {
+ 251   4                                      if (eHoldType == eHOLD_DISABLE)
+ 252   4                                      {
+ 253   5                                              eHoldType = eHOLD_ENABLE;
+ 254   5                                      }
+ 255   4                                      else
+ 256   4                                      {
+ 257   5                                              eHoldType = eHOLD_DISABLE;
+ 258   5                                      }
+ 259   4                                      Lcd_Hold(eHoldType);
+ 260   4                              }
+ 261   3                              else if (Key == 0x02)//P06, back light
+ 262   3                              {
+ 263   4                                      #if ENABLE_SOFT_BACKLIGHT
+ 264   4                                      if (P11 == 0)
+ 265   4                                              BackLightOn();
+ 266   4                                      else
+ 267   4                                              BackLightOff();
+ 268   4                                      #endif
+ 269   4                              }
+ 270   3                              else if (Key == 0x04)//P07,power
+ 271   3                              {
+ 272   4                              }
+ 273   3                              else if (Key == 0x4001)//P05,MODE
+ 274   3                              {
+ 275   4                                      if (eModeType == eMODEA)
+ 276   4                                      {
+ 277   5                                              eModeType = eMODEB;
+ 278   5                                      }
+ 279   4                                      else if (eModeType == eMODEB)
+ 280   4                                      {
+ 281   5                                              eModeType = eMODEC;
+ 282   5                                      }
+ 283   4                                      else if (eModeType == eMODEC)
+ 284   4                                      {
+ 285   5                                              eModeType = eMODED;
+ 286   5                                      }
+ 287   4                                      else if (eModeType == eMODED)
+ 288   4                                      {
+ 289   5                                              eModeType = eMODEA;
+ 290   5                                      }
+ 291   4                                      LCD_Mode(eModeType);
+ 292   4                              }
+ 293   3                              else if (Key == 0x4002)//P06 C/F
+ 294   3                              {
+ 295   4                                      if (eTempType == eTEMP_C)
+ 296   4                                      {
+ 297   5                                              eTempType = eTEMP_F;
+ 298   5                                      }
+ 299   4                                      else
+ 300   4                                      {
+ 301   5                                              eTempType = eTEMP_C;
+ 302   5                                      }
+C51 COMPILER V9.54   MAIN                                                                  09/20/2020 17:09:44 PAGE 6   
+
+ 303   4                                      LCD_Temperature(eTempType);
+ 304   4                              }
+ 305   3                              else if (Key == 0x4004)//P07,power
+ 306   3                              {
+ 307   4                                      #if ENABLE_SOFT_POWER
+ 308   4                                      PowerOff();
+ 309   4                                      EA = 0;
+ 310   4                                      while(1);
+ 311   4                                      #endif
+ 312   4                              }
+ 313   3                              
+ 314   3                              //Bat process
+ 315   3                              if (usBatTime >= BAT_CHECK_TIME)
+ 316   3                              {
+ 317   4                                      usBatTime -= BAT_CHECK_TIME;
+ 318   4                                      BatProcess();
+ 319   4                              }
+ 320   3                              
+ 321   3                              //Signal
+ 322   3                              if (usSignalTime >= SIGNAL_CHECK_TIME)
+ 323   3                              {
+ 324   4                                      usSignalTime -= SIGNAL_CHECK_TIME;
+ 325   4                                      SignalProcess();
+ 326   4                              }
+ 327   3                              
+ 328   3                              //NTC
+ 329   3                              if (usNtcTime >= NTC_CHECK_TIME)
+ 330   3                              {
+ 331   4                                      usNtcTime -= NTC_CHECK_TIME;
+ 332   4                                      
+ 333   4                                      if (eHoldType == eHOLD_ENABLE)
+ 334   4                                              NtcProcess();
+ 335   4                              }
+ 336   3                      }
+ 337   2                      LCD_Reflash();
+ 338   2              }
+ 339   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1096    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     32       6
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

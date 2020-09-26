@@ -1,0 +1,49 @@
+#ifndef _USER_HEADER_H_
+#define _USER_HEADER_H_
+
+#define SYS_CLOCK	16000000
+#define TIMER_TICK_1MS	(SYS_CLOCK/1000)
+#define ENABLE_SOFT_POWER	1
+#define ENABLE_SOFT_BACKLIGHT	1
+
+
+typedef enum
+{
+	eMODEA,
+	eMODEB,
+	eMODEC,
+	eMODED,
+}MODETYPE;
+
+typedef enum
+{
+	eHOLD_DISABLE,
+	eHOLD_ENABLE,
+}HOLDTYPE;
+
+typedef enum
+{
+	eTEMP_C,
+	eTEMP_F,
+}TEMPERATURE;
+
+typedef enum
+{
+	eBAT0,
+	eBAT1,
+	eBAT2,
+	eBAT3,
+}BATLEVEL;
+
+#define BAT_ADC_BUF			8
+
+#define BAT_LEVEL0_VALUE	1024
+#define BAT_LEVEL1_VALUE	1576
+#define BAT_LEVEL2_VALUE	2048
+#define BAT_LEVEL3_VALUE	2560
+
+#define BAT_CHECK_TIME		500
+#define SIGNAL_CHECK_TIME	500
+#define NTC_CHECK_TIME		100
+#define NTC_DISPLAY_TIME	500
+#endif

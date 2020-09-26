@@ -1,0 +1,568 @@
+C51 COMPILER V9.54   SIGNAL                                                                09/20/2020 17:02:52 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE SIGNAL
+OBJECT MODULE PLACED IN Signal.obj
+COMPILER INVOKED BY: D:\keil\C51\BIN\C51.EXE c\Signal.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Signal
+                    -.lst) OBJECT(Signal.obj)
+
+line level    source
+
+   1          #include "H/Signal.h"
+   2          #include "H/Function_Init.H"
+   3          
+   4          unsigned short L_TEMP,L_TEMP1,D0,D0_old=0;      
+   5          
+   6          #define Max_average_count       16
+   7          char old_number;                        
+   8          unsigned short old_Data[16];
+   9          /***********************************************
+  10          *功能：让读数站稳，不乱飘。
+  11          *较正点由 ((value-minvalue)*100/maxvalue)决定。
+  12          ***********************************************/
+  13          void Function_average_number(void)
+  14          {
+  15   1      //static char old_zero;
+  16   1      long sum_Data=0;
+  17   1      long temp_Data;
+  18   1      long Max_Data,Min_Data;
+  19   1      int Temp_group;
+  20   1      long n;
+  21   1      char i,Number_average;
+  22   1              
+  23   1              n = D0 - old_Data[0];
+  24   1      
+  25   1              Temp_group = 20;
+  26   1                      
+  27   1              if((n<Temp_group)&&(n>(-Temp_group)))
+  28   1              {
+  29   2                      Number_average = Max_average_count;
+  30   2                                      
+  31   2                      if(old_number>=Number_average)
+  32   2                      {
+  33   3                              for(i=0;i<Number_average-1;i++)
+  34   3                              {
+  35   4                                      old_Data[i] = old_Data[i+1];
+  36   4                              }
+  37   3                      }
+  38   2                      else
+  39   2                      {                                               
+  40   3                              old_number++;
+  41   3                      }
+  42   2                      
+  43   2                      old_Data[old_number-1] = D0;
+  44   2                      
+  45   2                      Max_Data = old_Data[0];
+  46   2                      Min_Data = old_Data[0];
+  47   2                      
+  48   2                      for(i=0;i<old_number;i++)
+  49   2                      {
+  50   3                              sum_Data = sum_Data+old_Data[i];
+  51   3                              if(Max_Data<old_Data[i])
+  52   3                                      Max_Data=old_Data[i];
+  53   3                              if(Min_Data>old_Data[i])
+  54   3                                      Min_Data=old_Data[i];   
+C51 COMPILER V9.54   SIGNAL                                                                09/20/2020 17:02:52 PAGE 2   
+
+  55   3                      }
+  56   2      
+  57   2                      if(old_number<5)
+  58   2                      {
+  59   3                              temp_Data = sum_Data/old_number;
+  60   3                      }
+  61   2                      else
+  62   2                      {
+  63   3                              temp_Data = (sum_Data-Max_Data-Min_Data)/(old_number-2);
+  64   3                      }                       
+  65   2              }
+  66   1              else
+  67   1              {
+  68   2                      old_Data[0] = D0;
+  69   2                      old_number = 1;                 
+  70   2              }
+  71   1                      
+  72   1      }       
+  73          
+  74          
+  75          short code mucai_taba[][2] =
+  76          {
+  77                  {0,0},
+  78                  {60,30},                //40G   ,猜想
+  79                  {80,40},                //30G   ,猜想
+  80                  {115,45},               //20G
+  81                  {135,53},               //15G
+  82                  {154,56},               //10G
+  83                  {186,63},               //6G
+  84                  {222,69},               //2.4G,
+  85                  {246,85},               //1.2G
+  86                  {288,88},               //600M
+  87                  {324,94},               //300M
+  88                  {357,99},               //100M
+  89                  {399,106},              //45M
+  90                  {431,113},              //22M
+  91                  {435,115},              //20M
+  92                  {466,126},              //10M
+  93                  {477,130},              //8M
+  94                  {499,136},              //5M
+  95                  {523,144},              //3M
+  96                  {543,153},              //2M
+  97                  {554,156},              //1.6M
+  98                  {578,163},              //1M
+  99                  {583,167},              //900K
+ 100                  {598,173},              //680K
+ 101                  {616,183},              //490K
+ 102                  {639,229},              //330K
+ 103                  {665,304},              //220K
+ 104                  {692,385},              //150K
+ 105                  {723,485},              //100K
+ 106                  {732,505},              //90K
+ 107                  {741,549},              //80K
+ 108                  {752,584},              //70K
+ 109                  {765,638},              //60K
+ 110                  {782,721},              //50K
+ 111                  {802,849},              //40K
+ 112                  {827,923},              //30K
+ 113                  {861,936},              //20K
+ 114                  {911,955},              //10K
+ 115                  {1000,995},
+ 116                  {1010,998},
+C51 COMPILER V9.54   SIGNAL                                                                09/20/2020 17:02:52 PAGE 3   
+
+ 117                  {1030,999}
+ 118                  
+ 119          };
+ 120          
+ 121          short code mucai_tabb[][2] =
+ 122          {
+ 123                  {0,0},
+ 124                  {60,35},                //40G   ,猜想
+ 125                  {80,45},                //30G   ,猜想
+ 126                  {115,56},               //20G
+ 127                  {135,64},               //15G
+ 128                  {154,69},
+ 129                  {186,76},
+ 130                  {222,83},
+ 131                  {246,99},
+ 132                  {288,102},              //600M
+ 133                  {324,108},              //300M
+ 134                  {357,113},              //100M
+ 135                  {399,121},              //45M
+ 136                  {431,128},              //22M
+ 137                  {435,130},              //20M
+ 138                  {466,144},              //10M
+ 139                  {477,149},              //8M
+ 140                  {499,156},              //5M
+ 141                  {523,164},              //3M
+ 142                  {543,173},              //2M
+ 143                  {554,177},              //1.6M
+ 144                  {578,184},              //1M
+ 145                  {583,189},              //900K
+ 146                  {598,196},              //680K
+ 147                  {616,217},              //490K
+ 148                  {639,257},              //330K
+ 149                  {665,328},              //220K
+ 150                  {692,385},              //150K
+ 151                  {723,485},              //100K
+ 152                  {732,505},              //90K
+ 153                  {741,549},              //80K
+ 154                  {752,584},              //70K
+ 155                  {765,638},              //60K
+ 156                  {782,721},              //50K
+ 157                  {802,849},              //40K
+ 158                  {827,923},              //30K
+ 159                  {861,936},              //20K
+ 160                  {911,955},              //10K
+ 161                  {1000,995},
+ 162                  {1010,998},
+ 163                  {1030,999}
+ 164                  
+ 165          };
+ 166          
+ 167          short code mucai_tabc[][2] =
+ 168          {
+ 169                  {0,0},
+ 170                  {60,45},                //40G   ,猜想
+ 171                  {80,50},                //30G   ,猜想
+ 172                  {115,62},               //20G
+ 173                  {135,72},               //15G
+ 174                  {154,77},
+ 175                  {186,84},
+ 176                  {222,92},
+ 177                  {246,112},
+ 178                  {288,115},              //600M
+C51 COMPILER V9.54   SIGNAL                                                                09/20/2020 17:02:52 PAGE 4   
+
+ 179                  {324,123},              //300M
+ 180                  {357,130},              //100M
+ 181                  {399,141},              //45M
+ 182                  {431,150},              //22M
+ 183                  {435,155},              //20M
+ 184                  {466,174},              //10M
+ 185                  {477,178},              //8M
+ 186                  {499,191},              //5M
+ 187                  {523,204},              //3M
+ 188                  {543,217},              //2M
+ 189                  {554,226},              //1.6M
+ 190                  {578,236},              //1M
+ 191                  {583,241},              //900K
+ 192                  {598,248},              //680K
+ 193                  {616,273},              //490K
+ 194                  {639,309},              //330K
+ 195                  {665,349},              //220K
+ 196                  {692,385},              //150K
+ 197                  {723,485},              //100K
+ 198                  {732,505},              //90K
+ 199                  {741,549},              //80K
+ 200                  {752,584},              //70K
+ 201                  {765,638},              //60K
+ 202                  {782,721},              //50K
+ 203                  {802,849},              //40K
+ 204                  {827,923},              //30K
+ 205                  {861,936},              //20K
+ 206                  {911,955},              //10K
+ 207                  {1000,995},
+ 208                  {1010,998},
+ 209                  {1030,999}
+ 210                  
+ 211          };
+ 212          
+ 213          short code mucai_tabd[][2] =
+ 214          {
+ 215                  {0,0},
+ 216                  {60,50},                //40G   ,猜想
+ 217                  {80,58},                //30G   ,猜想
+ 218                  {115,68},               //20G
+ 219                  {135,79},               //15G
+ 220                  {154,84},
+ 221                  {186,93},
+ 222                  {222,101},
+ 223                  {246,117},
+ 224                  {288,118},              //600M
+ 225                  {324,128},              //300M
+ 226                  {357,134},              //100M
+ 227                  {399,143},              //45M
+ 228                  {431,151},              //22M
+ 229                  {435,153},              //20M
+ 230                  {466,166},              //10M
+ 231                  {477,172},              //8M
+ 232                  {499,180},              //5M
+ 233                  {523,191},              //3M
+ 234                  {543,205},              //2M
+ 235                  {554,211},              //1.6M
+ 236                  {578,222},              //1M
+ 237                  {583,227},              //900K
+ 238                  {598,233},              //680K
+ 239                  {616,255},              //490K
+ 240                  {639,286},              //330K
+C51 COMPILER V9.54   SIGNAL                                                                09/20/2020 17:02:52 PAGE 5   
+
+ 241                  {665,333},              //220K
+ 242                  {692,385},              //150K
+ 243                  {723,485},              //100K
+ 244                  {732,505},              //90K
+ 245                  {741,549},              //80K
+ 246                  {752,584},              //70K
+ 247                  {765,638},              //60K
+ 248                  {782,721},              //50K
+ 249                  {802,849},              //40K
+ 250                  {827,923},              //30K
+ 251                  {861,936},              //20K
+ 252                  {911,955},              //10K
+ 253                  {1000,995},
+ 254                  {1010,998},
+ 255                  {1030,999}
+ 256                  
+ 257          };
+ 258          
+ 259          short code mucai_tabe[][2] =
+ 260          {
+ 261                  {0,0},
+ 262                  {10,10},
+ 263                  {20,20},
+ 264                  {30,30},
+ 265                  {40,40},
+ 266                  {50,50},
+ 267                  {60,60},
+ 268                  {70,70},
+ 269                  {80,80},
+ 270                  {90,90},
+ 271                  {100,100},
+ 272                  {110,110},
+ 273                  {120,120},
+ 274                  {130,130},
+ 275                  {140,140},
+ 276                  {150,150},
+ 277                  {160,160},
+ 278                  {170,170},
+ 279                  {180,180},
+ 280                  {190,190},
+ 281                  {200,200},
+ 282                  {210,210},
+ 283                  {220,220},
+ 284                  {230,230},
+ 285                  {240,240},
+ 286                  {250,250},
+ 287                  {260,260},
+ 288                  {270,270},
+ 289                  {280,280},
+ 290                  {290,290},
+ 291                  {300,300},
+ 292                  {400,400},
+ 293                  {500,500},
+ 294                  {600,600},
+ 295                  {700,700},
+ 296                  {800,800},
+ 297                  {900,900},
+ 298                  {1000,1000},
+ 299                  {1010,1010},
+ 300                  {1030,1030}
+ 301                  
+ 302          };
+C51 COMPILER V9.54   SIGNAL                                                                09/20/2020 17:02:52 PAGE 6   
+
+ 303          
+ 304          
+ 305          int Measure_Process(MODETYPE eMode,unsigned short adcValue)
+ 306          {
+ 307   1      char i,j;               
+ 308   1      unsigned long temp_value,temp_value1;
+ 309   1              
+ 310   1                      L_TEMP = adcValue;
+ 311   1                      
+ 312   1                      D0 = L_TEMP;
+ 313   1                      
+ 314   1                      //平均算法。
+ 315   1                      Function_average_number();
+ 316   1                      
+ 317   1                      //稳定
+ 318   1      #if 1
+ 319   1                      if(((D0-D0_old)<20)&&((D0-D0_old)>-20))
+ 320   1                      {
+ 321   2                              D0 = (D0_old + D0_old + D0_old + D0 + D0) / 5;
+ 322   2                      }               
+ 323   1      #endif          
+ 324   1                      
+ 325   1                      L_TEMP = D0;
+ 326   1                      
+ 327   1                      //A类型
+ 328   1                      if(eMode == eMODEA)
+ 329   1                      {
+ 330   2                              i=0;
+ 331   2                              j=1;
+ 332   2                              while(j)
+ 333   2                              {
+ 334   3                                      if(L_TEMP<=mucai_taba[i][0])
+ 335   3                                      {
+ 336   4                                              j=0;
+ 337   4                                              break;
+ 338   4                                      }
+ 339   3                                      i++;
+ 340   3                                      if(i>=40)
+ 341   3                                      {
+ 342   4                                              j=0;
+ 343   4                                              break;
+ 344   4                                      }                               
+ 345   3                              }
+ 346   2                              
+ 347   2                              if((i>0)&(i<50))
+ 348   2                              {
+ 349   3                                      temp_value = mucai_taba[i-1][1];
+ 350   3                                      temp_value1 = (L_TEMP-mucai_taba[i-1][0]);
+ 351   3                                      temp_value1 = temp_value1*(mucai_taba[i][1]-mucai_taba[i-1][1]);
+ 352   3                                      temp_value1 = temp_value1 / (mucai_taba[i][0]-mucai_taba[i-1][0]);
+ 353   3                                      temp_value = temp_value + temp_value1; 
+ 354   3                              }
+ 355   2                              else
+ 356   2                              {
+ 357   3                                      temp_value = 0;
+ 358   3                              }                       
+ 359   2                              
+ 360   2                              L_TEMP1 = (long)(temp_value);
+ 361   2      
+ 362   2                              if(L_TEMP1>=1000)
+ 363   2                              {
+ 364   3                                      L_TEMP1 = 1000;
+C51 COMPILER V9.54   SIGNAL                                                                09/20/2020 17:02:52 PAGE 7   
+
+ 365   3                              }
+ 366   2                                                                      
+ 367   2      //                      LCD_BUFFER[2] = L_TEMP1 /100;
+ 368   2      //                      L_TEMP1 = L_TEMP1 % 100;
+ 369   2      //                      LCD_BUFFER[1] = L_TEMP1/10;
+ 370   2      //                      L_TEMP1 = L_TEMP1 % 10;
+ 371   2      //                      LCD_BUFFER[0] = L_TEMP1; 
+ 372   2                              return L_TEMP1;
+ 373   2                                      
+ 374   2                      }
+ 375   1                      else if(eMode == eMODEB)
+ 376   1                      {
+ 377   2                              i=0;
+ 378   2                              j=1;
+ 379   2                              while(j)
+ 380   2                              {
+ 381   3                                      if(L_TEMP<=mucai_tabb[i][0])
+ 382   3                                      {
+ 383   4                                              j=0;
+ 384   4                                              break;
+ 385   4                                      }
+ 386   3                                      i++;
+ 387   3                                      if(i>=40)
+ 388   3                                      {
+ 389   4                                              j=0;
+ 390   4                                              break;
+ 391   4                                      }                               
+ 392   3                              }
+ 393   2                              
+ 394   2                              if((i>0)&(i<50))
+ 395   2                              {
+ 396   3                                      temp_value = mucai_tabb[i-1][1];
+ 397   3                                      temp_value1 = (L_TEMP-mucai_tabb[i-1][0]);
+ 398   3                                      temp_value1 = temp_value1*(mucai_tabb[i][1]-mucai_tabb[i-1][1]);
+ 399   3                                      temp_value1 = temp_value1 / (mucai_tabb[i][0]-mucai_tabb[i-1][0]);
+ 400   3                                      temp_value = temp_value + temp_value1; 
+ 401   3                              }
+ 402   2                              else
+ 403   2                              {
+ 404   3                                      temp_value = 0;
+ 405   3                              }                       
+ 406   2                              
+ 407   2                              L_TEMP1 = (long)(temp_value);
+ 408   2      
+ 409   2                              if(L_TEMP1>=1000)
+ 410   2                              {
+ 411   3                                      L_TEMP1 = 1000;
+ 412   3                              }
+ 413   2                                                                      
+ 414   2      //                      LCD_BUFFER[2] = L_TEMP1 /100;
+ 415   2      //                      L_TEMP1 = L_TEMP1 % 100;
+ 416   2      //                      LCD_BUFFER[1] = L_TEMP1/10;
+ 417   2      //                      L_TEMP1 = L_TEMP1 % 10;
+ 418   2      //                      LCD_BUFFER[0] = L_TEMP1; 
+ 419   2                                      
+ 420   2                              return L_TEMP1;
+ 421   2                      }
+ 422   1                      else if(eMode == eMODEC)
+ 423   1                      {
+ 424   2                              i=0;
+ 425   2                              j=1;
+ 426   2                              while(j)
+C51 COMPILER V9.54   SIGNAL                                                                09/20/2020 17:02:52 PAGE 8   
+
+ 427   2                              {
+ 428   3                                      if(L_TEMP<=mucai_tabc[i][0])
+ 429   3                                      {
+ 430   4                                              j=0;
+ 431   4                                              break;
+ 432   4                                      }
+ 433   3                                      i++;
+ 434   3                                      if(i>=40)
+ 435   3                                      {
+ 436   4                                              j=0;
+ 437   4                                              break;
+ 438   4                                      }                               
+ 439   3                              }
+ 440   2                              
+ 441   2                              if((i>0)&(i<50))
+ 442   2                              {
+ 443   3                                      temp_value = mucai_tabc[i-1][1];
+ 444   3                                      temp_value1 = (L_TEMP-mucai_tabc[i-1][0]);
+ 445   3                                      temp_value1 = temp_value1*(mucai_tabc[i][1]-mucai_tabc[i-1][1]);
+ 446   3                                      temp_value1 = temp_value1 / (mucai_tabc[i][0]-mucai_tabc[i-1][0]);
+ 447   3                                      temp_value = temp_value + temp_value1; 
+ 448   3                              }
+ 449   2                              else
+ 450   2                              {
+ 451   3                                      temp_value = 0;
+ 452   3                              }                       
+ 453   2                              
+ 454   2                              L_TEMP1 = (long)(temp_value);
+ 455   2      
+ 456   2                              if(L_TEMP1>=1000)
+ 457   2                              {
+ 458   3                                      L_TEMP1 = 1000;
+ 459   3                              }
+ 460   2                                                                      
+ 461   2      //                      LCD_BUFFER[2] = L_TEMP1 /100;
+ 462   2      //                      L_TEMP1 = L_TEMP1 % 100;
+ 463   2      //                      LCD_BUFFER[1] = L_TEMP1/10;
+ 464   2      //                      L_TEMP1 = L_TEMP1 % 10;
+ 465   2      //                      LCD_BUFFER[0] = L_TEMP1; 
+ 466   2                              return L_TEMP1;
+ 467   2                                      
+ 468   2                      }
+ 469   1                      else if(eMode == eMODED)
+ 470   1                      {
+ 471   2                              i=0;
+ 472   2                              j=1;
+ 473   2                              while(j)
+ 474   2                              {
+ 475   3                                      if(L_TEMP<=mucai_tabd[i][0])
+ 476   3                                      {
+ 477   4                                              j=0;
+ 478   4                                              break;
+ 479   4                                      }
+ 480   3                                      i++;
+ 481   3                                      if(i>=40)
+ 482   3                                      {
+ 483   4                                              j=0;
+ 484   4                                              break;
+ 485   4                                      }                               
+ 486   3                              }
+ 487   2                              
+ 488   2                              if((i>0)&(i<50))
+C51 COMPILER V9.54   SIGNAL                                                                09/20/2020 17:02:52 PAGE 9   
+
+ 489   2                              {
+ 490   3                                      temp_value = mucai_tabd[i-1][1];
+ 491   3                                      temp_value1 = (L_TEMP-mucai_tabd[i-1][0]);
+ 492   3                                      temp_value1 = temp_value1*(mucai_tabd[i][1]-mucai_tabd[i-1][1]);
+ 493   3                                      temp_value1 = temp_value1 / (mucai_tabd[i][0]-mucai_tabd[i-1][0]);
+ 494   3                                      temp_value = temp_value + temp_value1; 
+ 495   3                              }
+ 496   2                              else
+ 497   2                              {
+ 498   3                                      temp_value = 0;
+ 499   3                              }                       
+ 500   2                              
+ 501   2                              L_TEMP1 = (long)(temp_value);
+ 502   2      
+ 503   2                              if(L_TEMP1>=1000)
+ 504   2                              {
+ 505   3                                      L_TEMP1 = 1000;
+ 506   3                              }
+ 507   2                                                                      
+ 508   2      //                      LCD_BUFFER[2] = L_TEMP1 /100;
+ 509   2      //                      L_TEMP1 = L_TEMP1 % 100;
+ 510   2      //                      LCD_BUFFER[1] = L_TEMP1/10;
+ 511   2      //                      L_TEMP1 = L_TEMP1 % 10;
+ 512   2      //                      LCD_BUFFER[0] = L_TEMP1; 
+ 513   2                              return L_TEMP1;
+ 514   2                      }
+ 515   1      //              else
+ 516   1      //              {
+ 517   1      //                      LCD_BUFFER[2] = L_TEMP /100;
+ 518   1      //                      L_TEMP = L_TEMP % 100;
+ 519   1      //                      LCD_BUFFER[1] = L_TEMP/10;
+ 520   1      //                      L_TEMP = L_TEMP % 10;
+ 521   1      //                      LCD_BUFFER[0] = L_TEMP; 
+ 522   1      //              }       
+ 523   1                      return L_TEMP;
+ 524   1      //              Display_Lcd_Number(2,LCD_BUFFER[2]);
+ 525   1      //              Display_Lcd_Number(1,LCD_BUFFER[1]);
+ 526   1      //              Display_Lcd_Number(0,LCD_BUFFER[0]);
+ 527   1      //              Display_Lcd_Dot(1);
+ 528   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2882    ----
+   CONSTANT SIZE    =    816    ----
+   XDATA SIZE       =     41      34
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
